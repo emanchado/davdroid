@@ -2,6 +2,7 @@
 var RoboHydraHeadDAV = require("./headdav");
 var RoboHydraHeadFilesystem =
         require("robohydra").heads.RoboHydraHeadFilesystem;
+var xml = require("xml");
 
 exports.getBodyParts = function(/*conf*/) {
     return {
@@ -18,24 +19,28 @@ exports.getBodyParts = function(/*conf*/) {
                 handler: function(req,res) {
                     if (req.method === "PROPFIND" && req.rawBody.toString().match(/home-set/)) {
                         res.statusCode = 207;
-                        res.write('<?xml version="1.0" encoding="utf-8" ?>\
-                                  <multistatus xmlns="DAV:">\
-                                  <response>\
-                                  <href>' + req.url + '</href> \
-                                  <propstat>\
-                                  <prop>\
-                                  <CARD:addressbook-home-set xmlns:CARD="urn:ietf:params:xml:ns:carddav">\
-                                  <href>/dav/addressbooks/test</href>\
-                                  </CARD:addressbook-home-set>\
-                                  <CAL:calendar-home-set xmlns:CAL="urn:ietf:params:xml:ns:caldav">\
-                                  <href>/dav/calendars/test/</href>\
-                                  </CAL:calendar-home-set>\
-                                  </prop>\
-                                  <status>HTTP/1.1 200 OK</status>\
-                                  </propstat>\
-                                  </response>\
-                                  </multistatus>\
-                                  ');
+                        res.write(xml({
+                            multistatus: [
+                                {_attr: {xmlns: "DAV:"}},
+                                {response: [
+                                    {href: req.url},
+                                    {propstat: [
+                                        {prop: [
+                                            {"CARD:addressbook-home-set": [
+                                                {_attr: {"xmlns:CARD": "urn:ietf:params:xml:ns:carddav"}},
+                                                {href: "/dav/addressbooks/test"}
+                                            ]},
+                                            {"CAL:calendar-home-set": [
+                                                {_attr: {"xmlns:CAL": "urn:ietf:params:xml:ns:caldav"}},
+                                                {href: "/dav/calendars/test/"}
+                                            ]}
+                                        ]},
+                                        {status: "HTTP/1.1 200 OK"}
+                                    ]}
+                                ]}
+                            ]},
+                            {declaration: true,
+                             indent: '  '}));
                     }
                 }
             }),
